@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  database:
+    image: mysql:8.0
+    container_name: todo-database
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: tododb
+      MYSQL_USER: todouser
+      MYSQL_PASSWORD: todopassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      todonetwork:
+        ipv4_address: 172.1.0.10
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend JAR
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    ports:
+      - "5000:5000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/tododb?useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: todouser
+      SPRING_DATASOURCE_PASSWORD: todopassword
+      SERVER_PORT: 5000
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      todonetwork:
+        ipv4_address: 172.1.0.20
+    restart: unless-stopped
+
+  # Frontend Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: todo-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      todonetwork:
+        ipv4_address: 172.1.0.30
+    restart: unless-stopped
+
+networks:
+  todonetwork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.1.0.0/16
+          gateway: 172.1.0.1
+
+volumes:
+  mysql_data:

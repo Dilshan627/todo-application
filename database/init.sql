@@ -1,0 +1,13 @@
+CREATE DATABASE IF NOT EXISTS tododb;
+
+USE tododb;
+
+CREATE TABLE task (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_task_completed_created (completed, created_at DESC)
+);
